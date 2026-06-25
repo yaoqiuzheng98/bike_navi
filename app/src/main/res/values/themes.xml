@@ -2,4 +2,7 @@
 <resources>
 
     <style name="Theme.BikeNavi" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- 骑行导航 Activity 使用的 AppCompat 主题 -->
+    <style name="NaviTheme" parent="Theme.AppCompat.Light.NoActionBar" />
 </resources>
