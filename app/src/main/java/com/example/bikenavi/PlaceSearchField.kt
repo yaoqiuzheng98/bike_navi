@@ -1,6 +1,5 @@
 package com.example.bikenavi
 
-import android.widget.ArrayAdapter
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
@@ -31,7 +30,7 @@ import com.baidu.mapapi.search.sug.SuggestionSearchOption
 @Composable
 fun PlaceSearchField(
     label: String,
-    city: String = "北京",
+    city: String,
     onSelected: (PlaceSuggestion) -> Unit,
 ) {
     var text by remember { mutableStateOf("") }

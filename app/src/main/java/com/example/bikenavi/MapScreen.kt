@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,6 +62,7 @@ fun MapScreen() {
 
     var startPt by remember { mutableStateOf<LatLng?>(null) }
     var endPt by remember { mutableStateOf<LatLng?>(null) }
+    var city by remember { mutableStateOf("广州") }
 
     // 地图引用
     val mapView = remember { MapView(context) }
@@ -126,8 +128,16 @@ fun MapScreen() {
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                OutlinedTextField(
+                    value = city,
+                    onValueChange = { city = it },
+                    label = { Text("城市") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 PlaceSearchField(
                     label = "起点",
+                    city = city,
                     onSelected = { sug ->
                         startPt = sug.pt
                         sug.pt?.let {
@@ -140,6 +150,7 @@ fun MapScreen() {
                 )
                 PlaceSearchField(
                     label = "终点",
+                    city = city,
                     onSelected = { sug ->
                         endPt = sug.pt
                         sug.pt?.let {
