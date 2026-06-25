@@ -8,19 +8,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.baidu.mapapi.search.sug.OnGetSuggestionResultListener
-import com.baidu.mapapi.search.sug.SuggestionResult
-import com.baidu.mapapi.search.sug.SuggestionSearch
-import com.baidu.mapapi.search.sug.SuggestionSearchOption
+import androidx.compose.ui.platform.LocalContext
+import android.util.Log
+import com.amap.api.services.help.Inputtips
+import com.amap.api.services.help.InputtipsQuery
+import com.amap.api.services.help.Tip
 
 /**
- * 地点搜索输入框组件，输入时自动调用百度 Sug 检索显示下拉建议。
+ * 地点搜索输入框组件，输入时自动调用高德 Inputtips 显示下拉建议。
  *
  * @param label 输入框标签（如 "起点" / "终点"）
  * @param city  限定搜索城市
@@ -36,25 +36,7 @@ fun PlaceSearchField(
     var text by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
     var suggestions by remember { mutableStateOf<List<PlaceSuggestion>>(emptyList()) }
-
-    // Sug 检索实例 —— 每个 PlaceSearchField 持有独立实例，避免回调互相覆盖
-    val sugSearch = remember { SuggestionSearch.newInstance() }
-    val listener = remember {
-        object : OnGetSuggestionResultListener {
-            override fun onGetSuggestionResult(result: SuggestionResult?) {
-                val list = result?.allSuggestions
-                    ?.filter { it.key != null && it.pt != null }
-                    ?.map { PlaceSuggestion.from(it) }
-                    .orEmpty()
-                suggestions = list
-                expanded = list.isNotEmpty()
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        sugSearch.setOnGetSuggestionResultListener(listener)
-    }
+    val context = LocalContext.current
 
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
@@ -62,9 +44,19 @@ fun PlaceSearchField(
             onValueChange = { input ->
                 text = input
                 if (input.isNotBlank()) {
-                    sugSearch.requestSuggestion(
-                        SuggestionSearchOption().keyword(input).city(city)
-                    )
+                    // 高德 Inputtips 搜索
+                    val query = InputtipsQuery(input, city)
+                    val tips = Inputtips(context, query)
+                    tips.setInputtipsListener { list, code ->
+                        Log.d("PlaceSearchField", "Inputtips callback code=$code size=${list?.size}")
+                        val filtered = list
+                            ?.filter { it.point != null }
+                            ?.map { PlaceSuggestion.from(it) }
+                            .orEmpty()
+                        suggestions = filtered
+                        expanded = filtered.isNotEmpty()
+                    }
+                    tips.requestInputtipsAsyn()
                 } else {
                     suggestions = emptyList()
                     expanded = false

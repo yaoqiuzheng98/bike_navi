@@ -19,17 +19,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        // 百度导航 SDK 方法数多，需 multidex
         multiDexEnabled = true
         ndk {
-            // 百度 SDK 只提供 arm 架构 .so
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
-        }
-    }
-
-    packaging {
-        jniLibs {
-            pickFirsts.add("**/libBaiduMapSDK_*.so")
+            // 高德 SDK V11.2.000 仅支持 arm64-v8a
+            abiFilters += listOf("arm64-v8a")
         }
     }
 
@@ -47,6 +40,11 @@ android {
     buildFeatures {
         compose = true
     }
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jniLibs")
+        }
+    }
 }
 
 dependencies {
@@ -59,14 +57,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // 百度地图：步骑行导航组件（含 Map 核心 + bwnavi 引擎，保留其 a.a.a.a.a.a 类）
-    implementation("com.baidu.lbsyun:BaiduMapSDK_Map-BWNavi:8.1.0")
-    // 检索组件（Sug 建议、路线规划）—— 本地去重版：移除了与 bwnavi 重复的 a.a.a.a.a.a
-    implementation(files("libs/BaiduMapSDK_Search-8.1.0.aar"))
-    // 工具组件
-    implementation("com.baidu.lbsyun:BaiduMapSDK_Util:8.1.0")
-    // 导航 TTS 语音播报
-    implementation("com.baidu.lbsyun:NaviTts:3.2.13")
+    // 高德导航合包 AAR（V11.2.000，导航 + 3D 地图 + 定位 + 搜索，含 UI 资源和 so 库）
+    implementation(files("libs/amap_aar/AMap3DMap_11.2.000_AMapNavi_11.2.000_AMapSearch_9.8.0_AMapLocation_11.2.000_20260603.aar"))
     // AppCompat —— 导航 Activity 需要 AppCompat 主题
     implementation("androidx.appcompat:appcompat:1.7.0")
 
