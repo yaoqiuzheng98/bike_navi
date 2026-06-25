@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,8 +53,8 @@ import com.amap.api.services.core.LatLonPoint
 import com.amap.api.services.route.RouteSearch
 
 /**
- * 主界面：城市+终点搜索 + 地图 + 操作按钮
- * 起点自动使用当前定位，只需搜索终点。
+ * 主界面：终点搜索 + 地图 + 操作按钮
+ * 起点自动使用当前定位，城市自动从定位获取。
  */
 @Composable
 fun MapScreen() {
@@ -65,8 +64,7 @@ fun MapScreen() {
     // 当前定位作为起点
     var startPt by remember { mutableStateOf<LatLng?>(null) }
     var endPt by remember { mutableStateOf<LatLng?>(null) }
-    var city by remember { mutableStateOf("广州") }
-    var locatedCity by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
 
     // 运行时申请定位权限
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -78,8 +76,7 @@ fun MapScreen() {
             startLocation(context) { loc ->
                 val latLng = LatLng(loc.latitude, loc.longitude)
                 startPt = latLng
-                locatedCity = loc.city ?: ""
-                if (locatedCity.isNotBlank()) city = locatedCity
+                city = loc.city ?: ""
                 Log.d("MapScreen", "定位成功: ${loc.latitude},${loc.longitude} city=${loc.city}")
             }
         }
@@ -98,8 +95,7 @@ fun MapScreen() {
             startLocation(context) { loc ->
                 val latLng = LatLng(loc.latitude, loc.longitude)
                 startPt = latLng
-                locatedCity = loc.city ?: ""
-                if (locatedCity.isNotBlank()) city = locatedCity
+                city = loc.city ?: ""
                 Log.d("MapScreen", "定位成功: ${loc.latitude},${loc.longitude} city=${loc.city}")
             }
         }
@@ -178,14 +174,7 @@ fun MapScreen() {
             ) {
                 // 显示当前定位状态
                 Text(
-                    text = if (startPt != null) "当前定位：${locatedCity.ifBlank { "已定位" }}" else "正在定位中...",
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = city,
-                    onValueChange = { city = it },
-                    label = { Text("城市") },
-                    singleLine = true,
+                    text = if (startPt != null) "当前定位：${city.ifBlank { "已定位" }}" else "正在定位中...",
                     modifier = Modifier.fillMaxWidth(),
                 )
                 PlaceSearchField(
@@ -283,6 +272,8 @@ private fun startLocation(context: android.content.Context, onLocated: (AMapLoca
         option.isOnceLocation = true
         // 高精度模式
         option.locationMode = AMapLocationClientOption.AMapLocationMode.Hight_Accuracy
+        // 需要返回逆地理编码信息（城市、省、区、地址）
+        option.isNeedAddress = true
         locationClient.setLocationOption(option)
         locationClient.setLocationListener { loc ->
             if (loc != null && loc.errorCode == 0) {
