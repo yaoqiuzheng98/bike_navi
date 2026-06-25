@@ -59,14 +59,10 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // 百度地图：步骑行导航组件（含 Map 核心）—— 排除传递依赖 bwnavi，使用本地去重版
-    implementation("com.baidu.lbsyun:BaiduMapSDK_Map-BWNavi:8.1.0") {
-        exclude(group = "com.baidu.lbsyun", module = "bwnavi")
-    }
-    // 本地修改版 bwnavi：已移除与 Search 重复的混淆类 a.a.a.a.a.a
-    implementation(files("libs/bwnavi-8.1.0.aar"))
-    // 检索组件（Sug 建议、路线规划）
-    implementation("com.baidu.lbsyun:BaiduMapSDK_Search:8.1.0")
+    // 百度地图：步骑行导航组件（含 Map 核心 + bwnavi 引擎，保留其 a.a.a.a.a.a 类）
+    implementation("com.baidu.lbsyun:BaiduMapSDK_Map-BWNavi:8.1.0")
+    // 检索组件（Sug 建议、路线规划）—— 本地去重版：移除了与 bwnavi 重复的 a.a.a.a.a.a
+    implementation(files("libs/BaiduMapSDK_Search-8.1.0.aar"))
     // 工具组件
     implementation("com.baidu.lbsyun:BaiduMapSDK_Util:8.1.0")
     // 导航 TTS 语音播报
