@@ -18,7 +18,6 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
         ndk {
             // 高德 SDK V11.2.000 仅支持 arm64-v8a
@@ -40,11 +39,6 @@ android {
     buildFeatures {
         compose = true
     }
-    sourceSets {
-        getByName("main") {
-            jniLibs.srcDirs("src/main/jniLibs")
-        }
-    }
 }
 
 dependencies {
@@ -62,11 +56,5 @@ dependencies {
     // AppCompat —— 导航 Activity 需要 AppCompat 主题
     implementation("androidx.appcompat:appcompat:1.7.0")
 
-    testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
