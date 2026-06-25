@@ -18,8 +18,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -30,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -115,6 +122,10 @@ fun MapScreen() {
         myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATE)
         aMap.myLocationStyle = myLocationStyle
         aMap.isMyLocationEnabled = true
+        // 隐藏 SDK 自带定位按钮（默认在右上角），改用自定义按钮放在右下角
+        aMap.uiSettings.isMyLocationButtonEnabled = false
+        // 隐藏缩放按钮，改用双指缩放手势
+        aMap.uiSettings.isZoomControlsEnabled = false
         onDispose { }
     }
 
@@ -202,6 +213,29 @@ fun MapScreen() {
                     factory = { mapView },
                     modifier = Modifier.fillMaxSize(),
                 )
+                // 自定义定位按钮（右下角，缩放按钮上方）
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 12.dp, bottom = 12.dp)
+                        .size(44.dp)
+                        .background(MaterialTheme.colorScheme.surface, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    androidx.compose.material3.IconButton(
+                        onClick = {
+                            startPt?.let {
+                                aMap.animateCamera(CameraUpdateFactory.newLatLngZoom(it, 17f))
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.MyLocation,
+                            contentDescription = "回到当前位置",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
 
             // 操作按钮
