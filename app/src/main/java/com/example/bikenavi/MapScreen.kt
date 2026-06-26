@@ -57,6 +57,7 @@ import com.amap.api.maps.model.BitmapDescriptor
 import com.amap.api.maps.model.BitmapDescriptorFactory
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.LatLngBounds
+import com.amap.api.maps.model.Marker
 import com.amap.api.maps.model.MarkerOptions
 import com.amap.api.maps.model.MyLocationStyle
 import com.amap.api.maps.model.PolylineOptions
@@ -78,6 +79,8 @@ fun MapScreen() {
     var city by remember { mutableStateOf("") }
     // 后端点位数据
     var bikePoints by remember { mutableStateOf<List<BikePoint>>(emptyList()) }
+    // 起终点标记（清除时只移除这些，不影响后端点位标记）
+    val routeMarkers = remember { mutableStateOf<List<Marker>>(emptyList()) }
 
     // 运行时申请定位权限
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -155,6 +158,14 @@ fun MapScreen() {
         }
     }
 
+    /**
+     * 清除起终点标记和路线，不影响后端点位标记
+     */
+    fun clearRouteMarkers() {
+        routeMarkers.value.forEach { it.remove() }
+        routeMarkers.value = emptyList()
+    }
+
     // 路线检索
     val routeSearch = remember { RouteSearch(context) }
     val routeListener = remember {
@@ -165,9 +176,11 @@ fun MapScreen() {
                     return
                 }
                 val path = result.paths[0]
-                aMap.clear()
-                startPt?.let { addMarker(aMap, it, true) }
-                endPt?.let { addMarker(aMap, it, false) }
+                clearRouteMarkers()
+                val markers = mutableListOf<Marker>()
+                startPt?.let { markers.add(addMarker(aMap, it, true)) }
+                endPt?.let { markers.add(addMarker(aMap, it, false)) }
+                routeMarkers.value = markers
                 drawRideRoute(aMap, path)
                 Toast.makeText(context, "路线规划成功，距离 ${path.distance} 米", Toast.LENGTH_SHORT).show()
             }
@@ -222,9 +235,11 @@ fun MapScreen() {
                         endPt = sug.pt
                         sug.pt?.let {
                             moveMap(aMap, it)
-                            aMap.clear()
-                            startPt?.let { s -> addMarker(aMap, s, true) }
-                            addMarker(aMap, it, false)
+                            clearRouteMarkers()
+                            val markers = mutableListOf<Marker>()
+                            startPt?.let { s -> markers.add(addMarker(aMap, s, true)) }
+                            markers.add(addMarker(aMap, it, false))
+                            routeMarkers.value = markers
                         }
                     },
                 )
@@ -284,9 +299,11 @@ fun MapScreen() {
                             Toast.makeText(context, "请先选择终点", Toast.LENGTH_SHORT).show()
                             return@OutlinedButton
                         }
-                        aMap.clear()
-                        addMarker(aMap, s, true)
-                        addMarker(aMap, e, false)
+                        clearRouteMarkers()
+                        val markers = mutableListOf<Marker>()
+                        markers.add(addMarker(aMap, s, true))
+                        markers.add(addMarker(aMap, e, false))
+                        routeMarkers.value = markers
                         val from = LatLonPoint(s.latitude, s.longitude)
                         val to = LatLonPoint(e.latitude, e.longitude)
                         val query = RouteSearch.RideRouteQuery(RouteSearch.FromAndTo(from, to))
@@ -379,10 +396,9 @@ private fun moveMap(aMap: AMap, pt: LatLng) {
     aMap.animateCamera(CameraUpdateFactory.newLatLngZoom(pt, 15f))
 }
 
-private fun addMarker(aMap: AMap, pt: LatLng?, isStart: Boolean) {
-    if (pt == null) return
+private fun addMarker(aMap: AMap, pt: LatLng?, isStart: Boolean): Marker {
     val bd = makeCircleBitmap(isStart)
-    aMap.addMarker(
+    return aMap.addMarker(
         MarkerOptions()
             .position(pt)
             .icon(bd)
