@@ -10,7 +10,7 @@ import java.net.URL
  */
 object ApiClient {
     // 后端地址（电脑局域网 IP + 端口）
-    private const val BASE_URL = "http://192.168.3.175:9999"
+    private const val BASE_URL = "http://192.168.0.109:9999"
 
     /**
      * 获取所有地点标记，同步调用，需在子线程执行
