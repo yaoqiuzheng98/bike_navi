@@ -17,4 +17,14 @@
         android:text="模拟导航"
         android:visibility="visible" />
 
+    <Button
+        android:id="@+id/btn_recenter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
+        android:text="回到导航"
+        android:visibility="gone" />
+
 </FrameLayout>

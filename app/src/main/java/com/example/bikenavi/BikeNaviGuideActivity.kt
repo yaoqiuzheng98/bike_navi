@@ -1,13 +1,18 @@
 package com.example.bikenavi
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import com.example.bikenavi.R
 import android.util.Log
+import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.amap.api.maps.model.MarkerOptions
 import com.amap.api.maps.AMapException
+import com.amap.api.maps.CameraUpdateFactory
+import com.amap.api.maps.model.LatLng
+import com.amap.api.maps.model.MarkerOptions
 import com.amap.api.navi.AMapNavi
 import com.amap.api.navi.AMapNaviListener
 import com.amap.api.navi.AMapNaviView
@@ -45,7 +50,13 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     private var endLatLng: NaviLatLng? = null
     private var routeOverLay: RouteOverLay? = null
     private var btnEmulator: Button? = null
+    private var btnRecenter: Button? = null
     private var isEmulatorMode = false
+    // 当前导航位置（用于回中）
+    private var currentNaviLocation: AMapNaviLocation? = null
+    // 5秒无操作自动回中
+    private val handler = Handler(Looper.getMainLooper())
+    private val recenterRunnable = Runnable { recenterToNavi() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,8 +90,40 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         btnEmulator?.setOnClickListener {
             // 开始模拟导航
             mAMapNavi.startNavi(NaviType.EMULATOR)
-            btnEmulator?.visibility = android.view.View.GONE
+            btnEmulator?.visibility = View.GONE
         }
+
+        // 4. 回到导航按钮
+        btnRecenter = findViewById(R.id.btn_recenter)
+        btnRecenter?.setOnClickListener {
+            recenterToNavi()
+        }
+
+        // 5. 地图触摸监听：用户滑动地图后，5秒无操作自动回中
+        mAMapNaviView.map.setOnMapTouchListener {
+            // 用户操作了地图，显示回中按钮，重置5秒计时
+            btnRecenter?.visibility = View.VISIBLE
+            handler.removeCallbacks(recenterRunnable)
+            handler.postDelayed(recenterRunnable, 5000)
+        }
+    }
+
+    /**
+     * 回到当前导航位置（回中）
+     */
+    private fun recenterToNavi() {
+        val loc = currentNaviLocation
+        if (loc != null) {
+            val coord = loc.coord
+            if (coord != null) {
+                val latLng = LatLng(coord.latitude, coord.longitude)
+                mAMapNaviView.map.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(latLng, 18f)
+                )
+            }
+        }
+        btnRecenter?.visibility = View.GONE
+        handler.removeCallbacks(recenterRunnable)
     }
 
     // ===== AMapNaviListener 关键回调 =====
@@ -154,7 +197,9 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         Log.d("BikeNaviGuide", "onStartNavi type=$naviType")
     }
     override fun onTrafficStatusUpdate() {}
-    override fun onLocationChange(location: AMapNaviLocation?) {}
+    override fun onLocationChange(location: AMapNaviLocation?) {
+        currentNaviLocation = location
+    }
     override fun onArriveDestination() {
         Toast.makeText(this, "已到达目的地", Toast.LENGTH_LONG).show()
     }
@@ -257,6 +302,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
 
     override fun onDestroy() {
         super.onDestroy()
+        handler.removeCallbacks(recenterRunnable)
         routeOverLay?.removeFromMap()
         routeOverLay?.destroy()
         if (::mAMapNaviView.isInitialized) mAMapNaviView.onDestroy()
