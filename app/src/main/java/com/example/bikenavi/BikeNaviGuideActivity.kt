@@ -5,6 +5,7 @@ import com.example.bikenavi.R
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.amap.api.maps.model.MarkerOptions
 import com.amap.api.maps.AMapException
 import com.amap.api.navi.AMapNavi
 import com.amap.api.navi.AMapNaviListener
@@ -26,6 +27,10 @@ import com.amap.api.navi.model.AimLessModeStat
 import com.amap.api.navi.model.NaviInfo
 import com.amap.api.navi.model.NaviLatLng
 import com.amap.api.navi.view.RouteOverLay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * 骑行导航诱导页：参照高德官方 demo 的 RideRouteCalculateActivity 模式。
@@ -185,7 +190,27 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     override fun onLockMap(lockMap: Boolean) {}
     override fun onNaviViewLoaded() {
         Log.d("BikeNaviGuide", "onNaviViewLoaded")
-        // 不要做任何操作，不要覆盖导航 SDK 内部画线逻辑
+        // 导航地图加载完成后，加载后端点位并标记到地图上
+        loadBikePoints()
+    }
+
+    /**
+     * 从后端加载点位并标记到导航地图上
+     */
+    private fun loadBikePoints() {
+        GlobalScope.launch(Dispatchers.Main) {
+            val points = withContext(Dispatchers.IO) { ApiClient.fetchPoints() }
+            if (points.isNotEmpty()) {
+                for (p in points) {
+                    mAMapNaviView.map.addMarker(
+                        MarkerOptions()
+                            .position(p.latLng)
+                            .title(p.name)
+                    )
+                }
+                Log.d("BikeNaviGuide", "已标记 ${points.size} 个点位")
+            }
+        }
     }
     override fun onMapTypeChanged(mapType: Int) {}
     override fun onNaviViewShowMode(showMode: Int) {}
