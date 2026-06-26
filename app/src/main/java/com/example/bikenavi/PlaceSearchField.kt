@@ -15,15 +15,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import android.util.Log
-import com.amap.api.services.help.Inputtips
-import com.amap.api.services.help.InputtipsQuery
-import com.amap.api.services.help.Tip
+import com.amap.api.maps.model.LatLng
+import com.amap.api.services.core.LatLonPoint
+import com.amap.api.services.core.PoiItem
+import com.amap.api.services.poisearch.PoiResult
+import com.amap.api.services.poisearch.PoiSearch
 
 /**
- * 地点搜索输入框组件，输入时自动调用高德 Inputtips 显示下拉建议。
+ * 地点搜索输入框组件，使用高德 PoiSearch 搜索，结果按距离当前位置从近到远排序。
  *
- * @param label 输入框标签（如 "起点" / "终点"）
+ * @param label 输入框标签
  * @param city  限定搜索城市
+ * @param currentLocation 当前定位位置，用于按距离排序
  * @param onSelected  选中某个建议后回调
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,6 +34,7 @@ import com.amap.api.services.help.Tip
 fun PlaceSearchField(
     label: String,
     city: String,
+    currentLocation: LatLng?,
     onSelected: (PlaceSuggestion) -> Unit,
 ) {
     var text by remember { mutableStateOf("") }
@@ -43,20 +47,32 @@ fun PlaceSearchField(
             value = text,
             onValueChange = { input ->
                 text = input
-                if (input.isNotBlank()) {
-                    // 高德 Inputtips 搜索
-                    val query = InputtipsQuery(input, city)
-                    val tips = Inputtips(context, query)
-                    tips.setInputtipsListener { list, code ->
-                        Log.d("PlaceSearchField", "Inputtips callback code=$code size=${list?.size}")
-                        val filtered = list
-                            ?.filter { it.point != null }
-                            ?.map { PlaceSuggestion.from(it) }
-                            .orEmpty()
-                        suggestions = filtered
-                        expanded = filtered.isNotEmpty()
-                    }
-                    tips.requestInputtipsAsyn()
+                if (input.isNotBlank() && currentLocation != null) {
+                    // 用 PoiSearch 关键字搜索，设置 location 让结果按距离排序
+                    val query = PoiSearch.Query(input, "", city)
+                    query.pageSize = 20
+                    query.pageNum = 0
+                    query.location = LatLonPoint(currentLocation.latitude, currentLocation.longitude)
+                    val poiSearch = PoiSearch(context, query)
+                    poiSearch.setOnPoiSearchListener(object : PoiSearch.OnPoiSearchListener {
+                        override fun onPoiSearched(result: PoiResult?, code: Int) {
+                            if (code != 1000 || result == null || result.pois.isNullOrEmpty()) {
+                                Log.d("PlaceSearchField", "PoiSearch code=$code size=0")
+                                suggestions = emptyList()
+                                expanded = false
+                                return
+                            }
+                            Log.d("PlaceSearchField", "PoiSearch code=$code size=${result.pois.size}")
+                            val filtered = result.pois
+                                .filter { it.latLonPoint != null }
+                                .map { PlaceSuggestion.from(it) }
+                            suggestions = filtered
+                            expanded = filtered.isNotEmpty()
+                        }
+
+                        override fun onPoiItemSearched(item: PoiItem?, code: Int) {}
+                    })
+                    poiSearch.searchPOIAsyn()
                 } else {
                     suggestions = emptyList()
                     expanded = false

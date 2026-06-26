@@ -217,6 +217,7 @@ fun MapScreen() {
                 PlaceSearchField(
                     label = "终点",
                     city = city,
+                    currentLocation = startPt,
                     onSelected = { sug ->
                         endPt = sug.pt
                         sug.pt?.let {
