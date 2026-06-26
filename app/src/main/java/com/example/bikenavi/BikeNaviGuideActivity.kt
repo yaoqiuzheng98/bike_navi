@@ -3,6 +3,7 @@ package com.example.bikenavi
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.speech.tts.TextToSpeech
 import com.example.bikenavi.R
 import android.util.Log
 import android.view.View
@@ -13,6 +14,11 @@ import com.amap.api.maps.AMapException
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.MarkerOptions
+import java.util.Locale
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 import com.amap.api.navi.AMapNavi
 import com.amap.api.navi.AMapNaviListener
 import com.amap.api.navi.AMapNaviView
@@ -57,6 +63,12 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     // 5秒无操作自动回中
     private val handler = Handler(Looper.getMainLooper())
     private val recenterRunnable = Runnable { recenterToNavi() }
+    // 标记点播报
+    private var bikePoints: List<BikePoint> = emptyList()
+    private val announcedPointIds = mutableSetOf<Long>()
+    private var tts: TextToSpeech? = null
+    // 播报距离阈值（米）
+    private val ANNOUNCE_DISTANCE = 300.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,6 +118,54 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
             handler.removeCallbacks(recenterRunnable)
             handler.postDelayed(recenterRunnable, 5000)
         }
+
+        // 6. 初始化 TTS 语音播报
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.language = Locale.CHINESE
+                Log.d("BikeNaviGuide", "TTS 初始化成功")
+            } else {
+                Log.e("BikeNaviGuide", "TTS 初始化失败 status=$status")
+            }
+        }
+    }
+
+    /**
+     * 语音播报
+     */
+    private fun speak(text: String) {
+        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "point_announce_${System.currentTimeMillis()}")
+    }
+
+    /**
+     * 检查附近标记点，距离小于阈值时语音播报
+     */
+    private fun checkNearbyPoints(lat: Double, lng: Double) {
+        val current = LatLng(lat, lng)
+        for (p in bikePoints) {
+            if (p.id in announcedPointIds) continue
+            val d = distanceMeters(current, p.latLng)
+            if (d <= ANNOUNCE_DISTANCE) {
+                announcedPointIds.add(p.id)
+                val msg = "前方${d.toInt()}米，即将经过${p.name}"
+                Log.d("BikeNaviGuide", "播报: $msg")
+                speak(msg)
+            }
+        }
+    }
+
+    /**
+     * Haversine 距离公式（米）
+     */
+    private fun distanceMeters(a: LatLng, b: LatLng): Double {
+        val r = 6371000.0
+        val lat1 = Math.toRadians(a.latitude)
+        val lat2 = Math.toRadians(b.latitude)
+        val dLat = Math.toRadians(b.latitude - a.latitude)
+        val dLng = Math.toRadians(b.longitude - a.longitude)
+        val h = sin(dLat / 2) * sin(dLat / 2) +
+                cos(lat1) * cos(lat2) * sin(dLng / 2) * sin(dLng / 2)
+        return 2 * r * asin(sqrt(h))
     }
 
     /**
@@ -199,6 +259,11 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     override fun onTrafficStatusUpdate() {}
     override fun onLocationChange(location: AMapNaviLocation?) {
         currentNaviLocation = location
+        // 检查附近标记点并播报
+        val coord = location?.coord
+        if (coord != null && bikePoints.isNotEmpty()) {
+            checkNearbyPoints(coord.latitude, coord.longitude)
+        }
     }
     override fun onArriveDestination() {
         Toast.makeText(this, "已到达目的地", Toast.LENGTH_LONG).show()
@@ -261,6 +326,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     private fun loadBikePoints() {
         GlobalScope.launch(Dispatchers.Main) {
             val points = withContext(Dispatchers.IO) { ApiClient.fetchPoints() }
+            bikePoints = points
             if (points.isNotEmpty()) {
                 for (p in points) {
                     mAMapNaviView.map.addMarker(
@@ -269,7 +335,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
                             .title(p.name)
                     )
                 }
-                Log.d("BikeNaviGuide", "已标记 ${points.size} 个点位")
+                Log.d("BikeNaviGuide", "已标记 ${points.size} 个点位，播报就绪")
             }
         }
     }
@@ -303,6 +369,8 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(recenterRunnable)
+        tts?.stop()
+        tts?.shutdown()
         routeOverLay?.removeFromMap()
         routeOverLay?.destroy()
         if (::mAMapNaviView.isInitialized) mAMapNaviView.onDestroy()
