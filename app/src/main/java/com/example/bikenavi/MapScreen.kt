@@ -316,6 +316,30 @@ fun MapScreen() {
                     },
                     modifier = Modifier.weight(1f),
                 ) { Text("开始导航") }
+
+                Button(
+                    onClick = {
+                        val s = startPt
+                        val e = endPt
+                        if (s == null) {
+                            Toast.makeText(context, "尚未定位到当前位置", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (e == null) {
+                            Toast.makeText(context, "请先选择终点", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        val intent = Intent(context, BikeNaviGuideActivity::class.java).apply {
+                            putExtra("startLat", s.latitude)
+                            putExtra("startLng", s.longitude)
+                            putExtra("endLat", e.latitude)
+                            putExtra("endLng", e.longitude)
+                            putExtra("emulator", true)
+                        }
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.weight(1f),
+                ) { Text("模拟导航") }
             }
         }
     }

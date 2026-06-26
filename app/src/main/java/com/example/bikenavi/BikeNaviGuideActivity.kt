@@ -3,6 +3,7 @@ package com.example.bikenavi
 import android.os.Bundle
 import com.example.bikenavi.R
 import android.util.Log
+import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.amap.api.maps.model.MarkerOptions
@@ -43,6 +44,8 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     private var startLatLng: NaviLatLng? = null
     private var endLatLng: NaviLatLng? = null
     private var routeOverLay: RouteOverLay? = null
+    private var btnEmulator: Button? = null
+    private var isEmulatorMode = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +56,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         val eLng = intent.getDoubleExtra("endLng", 0.0)
         startLatLng = NaviLatLng(sLat, sLng)
         endLatLng = NaviLatLng(eLat, eLng)
+        isEmulatorMode = intent.getBooleanExtra("emulator", false)
 
         // 1. 先获取 AMapNavi 实例并添加监听（参照 demo BaseActivity）
         try {
@@ -69,6 +73,14 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         // 使用 AmapPageType.NAVI 明确指定为导航界面（已算路场景）
         mAMapNaviView.onCreate(savedInstanceState, this, AmapPageType.NAVI)
         mAMapNaviView.setAMapNaviViewListener(this)
+
+        // 3. 模拟导航按钮
+        btnEmulator = findViewById(R.id.btn_emulator)
+        btnEmulator?.setOnClickListener {
+            // 开始模拟导航
+            mAMapNavi.startNavi(NaviType.EMULATOR)
+            btnEmulator?.visibility = android.view.View.GONE
+        }
     }
 
     // ===== AMapNaviListener 关键回调 =====
@@ -102,8 +114,12 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         if (routeIds != null && routeIds.isNotEmpty()) {
             drawRouteOverLay(routeIds[0])
         }
-        // 开始导航
-        mAMapNavi.startNavi(NaviType.GPS)
+        if (isEmulatorMode) {
+            // 模拟导航模式：算路成功后自动开始模拟导航
+            mAMapNavi.startNavi(NaviType.EMULATOR)
+            btnEmulator?.visibility = android.view.View.GONE
+        }
+        // GPS 导航模式：等用户点"模拟导航"按钮
     }
 
     /**

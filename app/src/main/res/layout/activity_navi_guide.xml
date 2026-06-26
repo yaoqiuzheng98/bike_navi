@@ -1,6 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.amap.api.navi.AMapNaviView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/navi_view"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent">
+
+    <com.amap.api.navi.AMapNaviView
+        android:id="@+id/navi_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <Button
+        android:id="@+id/btn_emulator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:text="模拟导航"
+        android:visibility="visible" />
+
+</FrameLayout>
