@@ -65,10 +65,17 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     private val recenterRunnable = Runnable { recenterToNavi() }
     // 标记点播报
     private var bikePoints: List<BikePoint> = emptyList()
-    private val announcedPointIds = mutableSetOf<Long>()
+    private val passedPointIds = mutableSetOf<Long>()     // 已路过的点
+    private val announcingPointIds = mutableSetOf<Long>() // 正在播报的点
+    private val lastAnnounceDistanceMap = mutableMapOf<Long, Int>() // 上次播报时的距离（米）
+    private val minDistanceMap = mutableMapOf<Long, Double>() // 每个点记录过的最近距离
     private var tts: TextToSpeech? = null
     // 播报距离阈值（米）
-    private val ANNOUNCE_DISTANCE = 300.0
+    private val ANNOUNCE_DISTANCE = 500.0
+    // 路过判定：曾经接近到此距离内，且开始远离即算路过
+    private val PASSED_DISTANCE = 150.0
+    // 每 N 米播报一次
+    private val ANNOUNCE_STEP = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -131,25 +138,60 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     }
 
     /**
-     * 语音播报
+     * 语音播报标记点
      */
     private fun speak(text: String) {
-        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "point_announce_${System.currentTimeMillis()}")
+        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "point_announce_${System.currentTimeMillis()}")
     }
 
     /**
-     * 检查附近标记点，距离小于阈值时语音播报
+     * 检查附近标记点：
+     * - 进入 500 米范围 → 播报一次
+     * - 之后每接近 100 米 → 播报一次
+     * - 曾经接近到 150 米内且开始远离 → 算路过，停止播报
+     * - 远离超过 500 米 → 停止播报
      */
     private fun checkNearbyPoints(lat: Double, lng: Double) {
         val current = LatLng(lat, lng)
         for (p in bikePoints) {
-            if (p.id in announcedPointIds) continue
+            if (p.id in passedPointIds) continue
             val d = distanceMeters(current, p.latLng)
+            val dMeters = d.toInt()
+            val minD = minDistanceMap[p.id] ?: Double.MAX_VALUE
+
             if (d <= ANNOUNCE_DISTANCE) {
-                announcedPointIds.add(p.id)
-                val msg = "前方${d.toInt()}米，即将经过${p.name}"
-                Log.d("BikeNaviGuide", "播报: $msg")
-                speak(msg)
+                // 记录最近距离
+                if (d < minD) {
+                    minDistanceMap[p.id] = d
+                }
+                // 曾经接近到 PASSED_DISTANCE 内，且开始远离 → 算路过
+                if (minD <= PASSED_DISTANCE && d > minD + 10) {
+                    passedPointIds.add(p.id)
+                    announcingPointIds.remove(p.id)
+                    lastAnnounceDistanceMap.remove(p.id)
+                    minDistanceMap.remove(p.id)
+                    Log.d("BikeNaviGuide", "已路过: ${p.name} (最近${minD.toInt()}米)")
+                    continue
+                }
+                // 判断是否需要播报：首次进入 或 距离每减少 100 米
+                val lastD = lastAnnounceDistanceMap[p.id]
+                if (lastD == null) {
+                    // 首次进入 500 米范围
+                    lastAnnounceDistanceMap[p.id] = dMeters
+                    announcingPointIds.add(p.id)
+                    speak("前方${dMeters}米，即将经过${p.name}")
+                    Log.d("BikeNaviGuide", "播报: ${p.name} (${dMeters}米)")
+                } else if (dMeters <= lastD - ANNOUNCE_STEP) {
+                    // 又近了 100 米
+                    lastAnnounceDistanceMap[p.id] = dMeters
+                    speak("前方${dMeters}米，即将经过${p.name}")
+                    Log.d("BikeNaviGuide", "播报: ${p.name} (${dMeters}米)")
+                }
+            } else {
+                // 远离超过 500 米，停止播报
+                announcingPointIds.remove(p.id)
+                lastAnnounceDistanceMap.remove(p.id)
+                minDistanceMap.remove(p.id)
             }
         }
     }
@@ -369,6 +411,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacks(recenterRunnable)
+        announcingPointIds.clear()
         tts?.stop()
         tts?.shutdown()
         routeOverLay?.removeFromMap()
