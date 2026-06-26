@@ -1,6 +1,7 @@
 package com.example.bikenavi
 
 import com.amap.api.maps.model.LatLng
+import com.amap.api.services.core.PoiItem
 import com.amap.api.services.help.Tip
 
 /**
@@ -18,6 +19,12 @@ data class PlaceSuggestion(
             name = tip.name ?: "",
             district = tip.district ?: "",
             pt = tip.point?.let { LatLng(it.latitude, it.longitude) },
+        )
+
+        fun from(poi: PoiItem): PlaceSuggestion = PlaceSuggestion(
+            name = poi.title ?: "",
+            district = poi.cityName ?: "",
+            pt = poi.latLonPoint?.let { LatLng(it.latitude, it.longitude) },
         )
     }
 }
