@@ -8,6 +8,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <View
+        android:id="@+id/alert_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/alert_border"
+        android:visibility="gone" />
+
     <Button
         android:id="@+id/btn_emulator"
         android:layout_width="wrap_content"

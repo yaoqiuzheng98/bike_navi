@@ -7,6 +7,7 @@ import android.speech.tts.TextToSpeech
 import com.example.bikenavi.R
 import android.util.Log
 import android.view.View
+import android.view.animation.AnimationUtils
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -57,6 +58,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     private var routeOverLay: RouteOverLay? = null
     private var btnEmulator: Button? = null
     private var btnRecenter: Button? = null
+    private var alertOverlay: View? = null
     private var isEmulatorMode = false
     // 当前导航位置（用于回中）
     private var currentNaviLocation: AMapNaviLocation? = null
@@ -118,6 +120,9 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
             recenterToNavi()
         }
 
+        // 4.5 红色闪烁预警遮罩
+        alertOverlay = findViewById(R.id.alert_overlay)
+
         // 5. 地图触摸监听：用户滑动地图后，5秒无操作自动回中
         mAMapNaviView.map.setOnMapTouchListener {
             // 用户操作了地图，显示回中按钮，重置5秒计时
@@ -141,7 +146,29 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
      * 语音播报标记点
      */
     private fun speak(text: String) {
+        startAlertFlash()
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "point_announce_${System.currentTimeMillis()}")
+    }
+
+    /**
+     * 开始红色边框闪烁
+     */
+    private fun startAlertFlash() {
+        alertOverlay?.let { overlay ->
+            overlay.visibility = View.VISIBLE
+            val anim = AnimationUtils.loadAnimation(this, R.anim.alert_flash)
+            overlay.startAnimation(anim)
+        }
+    }
+
+    /**
+     * 停止红色边框闪烁
+     */
+    private fun stopAlertFlash() {
+        alertOverlay?.let { overlay ->
+            overlay.clearAnimation()
+            overlay.visibility = View.GONE
+        }
     }
 
     /**
@@ -170,6 +197,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
                     announcingPointIds.remove(p.id)
                     lastAnnounceDistanceMap.remove(p.id)
                     minDistanceMap.remove(p.id)
+                    if (announcingPointIds.isEmpty()) stopAlertFlash()
                     Log.d("BikeNaviGuide", "已路过: ${p.name} (最近${minD.toInt()}米)")
                     continue
                 }
@@ -192,6 +220,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
                 announcingPointIds.remove(p.id)
                 lastAnnounceDistanceMap.remove(p.id)
                 minDistanceMap.remove(p.id)
+                if (announcingPointIds.isEmpty()) stopAlertFlash()
             }
         }
     }
@@ -412,6 +441,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         super.onDestroy()
         handler.removeCallbacks(recenterRunnable)
         announcingPointIds.clear()
+        stopAlertFlash()
         tts?.stop()
         tts?.shutdown()
         routeOverLay?.removeFromMap()
