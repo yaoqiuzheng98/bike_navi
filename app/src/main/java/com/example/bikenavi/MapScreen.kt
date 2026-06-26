@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -32,6 +33,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +44,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.amap.api.location.AMapLocation
 import com.amap.api.location.AMapLocationClient
 import com.amap.api.location.AMapLocationClientOption
@@ -72,6 +76,8 @@ fun MapScreen() {
     var startPt by remember { mutableStateOf<LatLng?>(null) }
     var endPt by remember { mutableStateOf<LatLng?>(null) }
     var city by remember { mutableStateOf("") }
+    // 后端点位数据
+    var bikePoints by remember { mutableStateOf<List<BikePoint>>(emptyList()) }
 
     // 运行时申请定位权限
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -83,7 +89,8 @@ fun MapScreen() {
             startLocation(context) { loc ->
                 val latLng = LatLng(loc.latitude, loc.longitude)
                 startPt = latLng
-                city = loc.city ?: ""
+                // 只在拿到城市名时才更新，避免 GPS 定位覆盖网络定位的城市
+                if (!loc.city.isNullOrBlank()) city = loc.city
                 Log.d("MapScreen", "定位成功: ${loc.latitude},${loc.longitude} city=${loc.city}")
             }
         }
@@ -102,7 +109,7 @@ fun MapScreen() {
             startLocation(context) { loc ->
                 val latLng = LatLng(loc.latitude, loc.longitude)
                 startPt = latLng
-                city = loc.city ?: ""
+                if (!loc.city.isNullOrBlank()) city = loc.city
                 Log.d("MapScreen", "定位成功: ${loc.latitude},${loc.longitude} city=${loc.city}")
             }
         }
@@ -127,6 +134,25 @@ fun MapScreen() {
         // 隐藏缩放按钮，改用双指缩放手势
         aMap.uiSettings.isZoomControlsEnabled = false
         onDispose { }
+    }
+
+    // 从后端加载点位并标记到地图上
+    LaunchedEffect(Unit) {
+        val points = withContext(Dispatchers.IO) { ApiClient.fetchPoints() }
+        bikePoints = points
+        if (points.isNotEmpty()) {
+            for (p in points) {
+                aMap.addMarker(
+                    MarkerOptions()
+                        .position(p.latLng)
+                        .title(p.name)
+                        .icon(makePointBitmap())
+                )
+            }
+            Log.d("MapScreen", "已标记 ${points.size} 个点位")
+        } else {
+            Log.w("MapScreen", "未获取到后端点位")
+        }
     }
 
     // 路线检索
@@ -352,6 +378,25 @@ private fun makeCircleBitmap(isStart: Boolean): BitmapDescriptor {
     paint.style = Paint.Style.STROKE
     paint.strokeWidth = 6f
     canvas.drawCircle(size / 2f, size / 3f, size / 3f, paint)
+    return BitmapDescriptorFactory.fromBitmap(bmp)
+}
+
+/**
+ * 后端点位的标记图标（蓝色小圆点）
+ */
+private fun makePointBitmap(): BitmapDescriptor {
+    val size = 40
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#FF1976D2")
+        style = Paint.Style.FILL
+    }
+    canvas.drawCircle(size / 2f, size / 2f, size / 3f, paint)
+    paint.color = Color.WHITE
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = 3f
+    canvas.drawCircle(size / 2f, size / 2f, size / 3f, paint)
     return BitmapDescriptorFactory.fromBitmap(bmp)
 }
 
