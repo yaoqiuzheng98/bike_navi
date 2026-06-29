@@ -90,13 +90,38 @@ fun MapScreen() {
             },
             title = { Text(if (isFirstTime) "请输入用户ID" else "修改用户ID") },
             text = {
-                OutlinedTextField(
-                    value = userIdInput,
-                    onValueChange = { userIdInput = it },
-                    label = { Text("用户ID") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Column {
+                    if (isFirstTime) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "添加客服微信获取用户ID\n微信号：WATF0908",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            TextButton(
+                                onClick = {
+                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("微信", "WATF0908"))
+                                    Toast.makeText(context, "已复制微信号", Toast.LENGTH_SHORT).show()
+                                },
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                            ) { Text("复制微信号") }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = userIdInput,
+                        onValueChange = { userIdInput = it },
+                        label = { Text("用户ID") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             },
             confirmButton = {
                 TextButton(
