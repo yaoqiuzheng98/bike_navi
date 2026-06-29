@@ -15,6 +15,8 @@ import com.amap.api.maps.AMapException
 import com.amap.api.maps.CameraUpdateFactory
 import com.amap.api.maps.model.LatLng
 import com.amap.api.maps.model.MarkerOptions
+import com.amap.api.maps.model.BitmapDescriptorFactory
+import android.graphics.BitmapFactory
 import java.util.Locale
 import kotlin.math.asin
 import kotlin.math.cos
@@ -394,11 +396,15 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
             }
             bikePoints = points
             if (points.isNotEmpty()) {
+                val original = BitmapFactory.decodeResource(resources, R.drawable.camera)
+                val scaled = android.graphics.Bitmap.createScaledBitmap(original!!, 60, 60, true)
+                val icon = BitmapDescriptorFactory.fromBitmap(scaled)
                 for (p in points) {
                     mAMapNaviView.map.addMarker(
                         MarkerOptions()
                             .position(p.latLng)
                             .title(p.name)
+                            .icon(icon)
                     )
                 }
                 Log.d("BikeNaviGuide", "已标记 ${points.size} 个点位，播报就绪")
