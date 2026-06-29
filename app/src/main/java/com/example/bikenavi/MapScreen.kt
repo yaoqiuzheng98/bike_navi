@@ -115,6 +115,10 @@ fun MapScreen() {
     // 起终点标记（清除时只移除这些，不影响后端点位标记）
     val routeMarkers = remember { mutableStateOf<List<Marker>>(emptyList()) }
 
+    // 地图引用
+    val mapView = remember { MapView(context) }
+    val aMap = remember { mapView.map }
+
     // 运行时申请定位权限
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -127,11 +131,27 @@ fun MapScreen() {
                 startPt = latLng
                 // 只在拿到城市名时才更新，避免 GPS 定位覆盖网络定位的城市
                 if (!loc.city.isNullOrBlank()) city = loc.city
+                // 移动地图视角到当前位置
+                aMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
                 Log.d("MapScreen", "定位成功: ${loc.latitude},${loc.longitude} city=${loc.city}")
             }
         }
     }
     DisposableEffect(Unit) {
+        // MapView 必须调用 onCreate 才能显示地图
+        mapView.onCreate(null)
+        // 显示定位蓝点（跟随模式，箭头朝向行进方向）
+        val myLocationStyle = MyLocationStyle()
+        myLocationStyle.showMyLocation(true)
+        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE)
+        myLocationStyle.interval(2000)
+        aMap.myLocationStyle = myLocationStyle
+        aMap.isMyLocationEnabled = true
+        // 隐藏 SDK 自带定位按钮（默认在右上角），改用自定义按钮放在右下角
+        aMap.uiSettings.isMyLocationButtonEnabled = false
+        // 隐藏缩放按钮，改用双指缩放手势
+        aMap.uiSettings.isZoomControlsEnabled = false
+
         val perms = arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -146,34 +166,31 @@ fun MapScreen() {
                 val latLng = LatLng(loc.latitude, loc.longitude)
                 startPt = latLng
                 if (!loc.city.isNullOrBlank()) city = loc.city
+                // 移动地图视角到当前位置
+                aMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
                 Log.d("MapScreen", "定位成功: ${loc.latitude},${loc.longitude} city=${loc.city}")
             }
         }
         onDispose { }
     }
 
-    // 地图引用
-    val mapView = remember { MapView(context) }
-    val aMap = remember { mapView.map }
-
-    // MapView 必须调用 onCreate 才能显示地图
-    DisposableEffect(Unit) {
-        mapView.onCreate(null)
-        // 显示定位蓝点
-        val myLocationStyle = MyLocationStyle()
-        myLocationStyle.showMyLocation(true)
-        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATE)
-        aMap.myLocationStyle = myLocationStyle
-        aMap.isMyLocationEnabled = true
-        // 隐藏 SDK 自带定位按钮（默认在右上角），改用自定义按钮放在右下角
-        aMap.uiSettings.isMyLocationButtonEnabled = false
-        // 隐藏缩放按钮，改用双指缩放手势
-        aMap.uiSettings.isZoomControlsEnabled = false
-        onDispose { }
-    }
-
-    // 从后端加载点位并标记到地图上
-    LaunchedEffect(Unit) {
+    // 从后端加载点位并标记到地图上（UserId 变化时重新加载）
+    val currentUserId = UserIdManager.getUserId()
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNullOrBlank()) return@LaunchedEffect
+        // 只清除起终点标记，不清 aMap.clear() 以免清掉定位箭头
+        routeMarkers.value.forEach { it.remove() }
+        routeMarkers.value = emptyList()
+        // 如果还没定位成功，重新触发定位
+        if (startPt == null) {
+            startLocation(context) { loc ->
+                val latLng = LatLng(loc.latitude, loc.longitude)
+                startPt = latLng
+                if (!loc.city.isNullOrBlank()) city = loc.city
+                aMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+                Log.d("MapScreen", "重新定位成功: ${loc.latitude},${loc.longitude} city=${loc.city}")
+            }
+        }
         val points = withContext(Dispatchers.IO) { ApiClient.fetchPoints() }
         bikePoints = points
         if (points.isNotEmpty()) {
