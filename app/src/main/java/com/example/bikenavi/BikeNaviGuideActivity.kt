@@ -56,7 +56,6 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     private var startLatLng: NaviLatLng? = null
     private var endLatLng: NaviLatLng? = null
     private var routeOverLay: RouteOverLay? = null
-    private var btnEmulator: Button? = null
     private var btnRecenter: Button? = null
     private var alertOverlay: View? = null
     private var isEmulatorMode = false
@@ -106,21 +105,13 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         mAMapNaviView.onCreate(savedInstanceState, this, AmapPageType.NAVI)
         mAMapNaviView.setAMapNaviViewListener(this)
 
-        // 3. 模拟导航按钮
-        btnEmulator = findViewById(R.id.btn_emulator)
-        btnEmulator?.setOnClickListener {
-            // 开始模拟导航
-            mAMapNavi.startNavi(NaviType.EMULATOR)
-            btnEmulator?.visibility = View.GONE
-        }
-
-        // 4. 回到导航按钮
+        // 3. 回到导航按钮
         btnRecenter = findViewById(R.id.btn_recenter)
         btnRecenter?.setOnClickListener {
             recenterToNavi()
         }
 
-        // 4.5 红色闪烁预警遮罩
+        // 4. 红色闪烁预警遮罩
         alertOverlay = findViewById(R.id.alert_overlay)
 
         // 5. 地图触摸监听：用户滑动地图后，5秒无操作自动回中
@@ -291,9 +282,7 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         if (isEmulatorMode) {
             // 模拟导航模式：算路成功后自动开始模拟导航
             mAMapNavi.startNavi(NaviType.EMULATOR)
-            btnEmulator?.visibility = android.view.View.GONE
         }
-        // GPS 导航模式：等用户点"模拟导航"按钮
     }
 
     /**

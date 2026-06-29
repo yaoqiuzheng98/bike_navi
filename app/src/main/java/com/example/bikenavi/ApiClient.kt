@@ -6,11 +6,11 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * 后端 API 客户端，用 HttpURLConnection 请求 /point 接口
+ * 后端 API 客户端，用 HttpURLConnection 请求后端接口
  */
 object ApiClient {
     // 后端地址（电脑局域网 IP + 端口）
-    private const val BASE_URL = "http://192.168.0.109:9999"
+    private const val BASE_URL = "http://192.168.3.175:9999"
 
     /**
      * 获取所有地点标记，同步调用，需在子线程执行
@@ -23,6 +23,10 @@ object ApiClient {
             conn.connectTimeout = 5000
             conn.readTimeout = 5000
             conn.requestMethod = "GET"
+            // 带上 X-User-Id 请求头
+            UserIdManager.getUserId()?.let {
+                conn.setRequestProperty("X-User-Id", it)
+            }
 
             val code = conn.responseCode
             if (code != 200) {

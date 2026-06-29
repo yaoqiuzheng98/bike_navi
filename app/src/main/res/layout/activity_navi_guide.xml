@@ -16,15 +16,6 @@
         android:visibility="gone" />
 
     <Button
-        android:id="@+id/btn_emulator"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_marginBottom="24dp"
-        android:text="模拟导航"
-        android:visibility="visible" />
-
-    <Button
         android:id="@+id/btn_recenter"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -9,6 +9,7 @@ import com.example.bikenavi.ui.theme.BikeNaviTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        UserIdManager.init(this)
         enableEdgeToEdge()
         setContent {
             BikeNaviTheme {

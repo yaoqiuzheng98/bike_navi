@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -25,12 +26,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -72,6 +76,35 @@ import com.amap.api.services.route.RouteSearch
 fun MapScreen() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // UserId 弹窗
+    var showUserIdDialog by remember { mutableStateOf(!UserIdManager.hasUserId()) }
+    var userIdInput by remember { mutableStateOf("") }
+
+    if (showUserIdDialog) {
+        AlertDialog(
+            onDismissRequest = { /* 不允许关闭，必须输入 */ },
+            title = { Text("请输入用户ID") },
+            text = {
+                OutlinedTextField(
+                    value = userIdInput,
+                    onValueChange = { userIdInput = it },
+                    label = { Text("用户ID") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = userIdInput.isNotBlank(),
+                    onClick = {
+                        UserIdManager.saveUserId(userIdInput.trim())
+                        showUserIdDialog = false
+                    },
+                ) { Text("确定") }
+            },
+        )
+    }
 
     // 当前定位作为起点
     var startPt by remember { mutableStateOf<LatLng?>(null) }
@@ -335,6 +368,7 @@ fun MapScreen() {
                     modifier = Modifier.weight(1f),
                 ) { Text("开始导航") }
 
+                // 模拟导航按钮（隐藏，保留逻辑）
                 Button(
                     onClick = {
                         val s = startPt
@@ -356,7 +390,9 @@ fun MapScreen() {
                         }
                         context.startActivity(intent)
                     },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(0.dp),
                 ) { Text("模拟导航") }
             }
         }
