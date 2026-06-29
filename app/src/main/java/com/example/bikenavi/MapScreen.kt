@@ -80,11 +80,15 @@ fun MapScreen() {
     // UserId 弹窗
     var showUserIdDialog by remember { mutableStateOf(!UserIdManager.hasUserId()) }
     var userIdInput by remember { mutableStateOf("") }
+    val isFirstTime = remember { !UserIdManager.hasUserId() }
 
     if (showUserIdDialog) {
         AlertDialog(
-            onDismissRequest = { /* 不允许关闭，必须输入 */ },
-            title = { Text("请输入用户ID") },
+            onDismissRequest = {
+                // 首次必须输入，已有 UserId 时可以取消
+                if (!isFirstTime) showUserIdDialog = false
+            },
+            title = { Text(if (isFirstTime) "请输入用户ID" else "修改用户ID") },
             text = {
                 OutlinedTextField(
                     value = userIdInput,
@@ -102,6 +106,11 @@ fun MapScreen() {
                         showUserIdDialog = false
                     },
                 ) { Text("确定") }
+            },
+            dismissButton = {
+                if (!isFirstTime) {
+                    TextButton(onClick = { showUserIdDialog = false }) { Text("取消") }
+                }
             },
         )
     }
@@ -298,11 +307,30 @@ fun MapScreen() {
                     .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // 显示当前定位状态
-                Text(
-                    text = if (startPt != null) "当前定位：${city.ifBlank { "已定位" }}" else "正在定位中...",
+                // 显示当前定位状态和用户ID
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                )
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (startPt != null) "当前定位：${city.ifBlank { "已定位" }}" else "正在定位中...",
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        UserIdManager.getUserId()?.let {
+                            Text(
+                                text = "用户：$it",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        TextButton(
+                            onClick = { showUserIdDialog = true },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                        ) { Text("修改") }
+                    }
+                }
                 PlaceSearchField(
                     label = "终点",
                     city = city,
