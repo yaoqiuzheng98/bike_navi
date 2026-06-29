@@ -174,10 +174,10 @@ fun MapScreen() {
     DisposableEffect(Unit) {
         // MapView 必须调用 onCreate 才能显示地图
         mapView.onCreate(null)
-        // 显示定位蓝点（跟随模式，箭头朝向行进方向）
+        // 显示定位蓝点（仅定位，不自动跟随，用户可自由滑动地图）
         val myLocationStyle = MyLocationStyle()
         myLocationStyle.showMyLocation(true)
-        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATION_ROTATE)
+        myLocationStyle.myLocationType(MyLocationStyle.LOCATION_TYPE_LOCATE)
         myLocationStyle.interval(2000)
         aMap.myLocationStyle = myLocationStyle
         aMap.isMyLocationEnabled = true
