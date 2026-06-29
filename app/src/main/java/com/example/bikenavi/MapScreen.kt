@@ -245,7 +245,7 @@ fun MapScreen() {
                     MarkerOptions()
                         .position(p.latLng)
                         .title(p.name)
-                        .icon(makePointBitmap())
+                        .icon(makePointBitmap(context))
                 )
             }
             Log.d("MapScreen", "已标记 ${points.size} 个点位")
@@ -557,20 +557,11 @@ private fun makeCircleBitmap(isStart: Boolean): BitmapDescriptor {
 /**
  * 后端点位的标记图标（蓝色小圆点）
  */
-private fun makePointBitmap(): BitmapDescriptor {
-    val size = 40
-    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bmp)
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#FF1976D2")
-        style = Paint.Style.FILL
-    }
-    canvas.drawCircle(size / 2f, size / 2f, size / 3f, paint)
-    paint.color = Color.WHITE
-    paint.style = Paint.Style.STROKE
-    paint.strokeWidth = 3f
-    canvas.drawCircle(size / 2f, size / 2f, size / 3f, paint)
-    return BitmapDescriptorFactory.fromBitmap(bmp)
+private fun makePointBitmap(context: android.content.Context): BitmapDescriptor {
+    val original = android.graphics.BitmapFactory.decodeResource(context.resources, R.drawable.camera)
+    val size = 60
+    val scaled = android.graphics.Bitmap.createScaledBitmap(original!!, size, size, true)
+    return BitmapDescriptorFactory.fromBitmap(scaled)
 }
 
 /**
