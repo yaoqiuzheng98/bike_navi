@@ -176,6 +176,10 @@ fun MapScreen() {
 
     // 从后端加载点位并标记到地图上（UserId 变化时重新加载）
     val currentUserId = UserIdManager.getUserId()
+    // 更新提示弹窗
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateMessage by remember { mutableStateOf("") }
+
     LaunchedEffect(currentUserId) {
         if (currentUserId.isNullOrBlank()) return@LaunchedEffect
         // 只清除起终点标记，不清 aMap.clear() 以免清掉定位箭头
@@ -192,6 +196,14 @@ fun MapScreen() {
             }
         }
         val points = withContext(Dispatchers.IO) { ApiClient.fetchPoints() }
+        if (points == null) {
+            // 版本过低，需要更新
+            ApiClient.updateInfo?.let {
+                updateMessage = it.message
+                showUpdateDialog = true
+            }
+            return@LaunchedEffect
+        }
         bikePoints = points
         if (points.isNotEmpty()) {
             for (p in points) {
@@ -206,6 +218,20 @@ fun MapScreen() {
         } else {
             Log.w("MapScreen", "未获取到后端点位")
         }
+    }
+
+    // 版本更新提示弹窗
+    if (showUpdateDialog) {
+        AlertDialog(
+            onDismissRequest = { /* 不允许关闭 */ },
+            title = { Text("发现新版本") },
+            text = { Text(updateMessage) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showUpdateDialog = false
+                }) { Text("知道了") }
+            },
+        )
     }
 
     /**

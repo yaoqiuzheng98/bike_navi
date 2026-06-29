@@ -386,6 +386,10 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
     private fun loadBikePoints() {
         GlobalScope.launch(Dispatchers.Main) {
             val points = withContext(Dispatchers.IO) { ApiClient.fetchPoints() }
+            if (points == null) {
+                Log.w("BikeNaviGuide", "版本过低，无法加载点位")
+                return@launch
+            }
             bikePoints = points
             if (points.isNotEmpty()) {
                 for (p in points) {
