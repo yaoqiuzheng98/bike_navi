@@ -279,9 +279,11 @@ class BikeNaviGuideActivity : AppCompatActivity(), AMapNaviListener, AMapNaviVie
         if (routeIds != null && routeIds.isNotEmpty()) {
             drawRouteOverLay(routeIds[0])
         }
+        // 算路成功后开始导航
         if (isEmulatorMode) {
-            // 模拟导航模式：算路成功后自动开始模拟导航
             mAMapNavi.startNavi(NaviType.EMULATOR)
+        } else {
+            mAMapNavi.startNavi(NaviType.GPS)
         }
     }
 
