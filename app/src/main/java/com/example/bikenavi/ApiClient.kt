@@ -10,8 +10,8 @@ import java.net.URL
  * 后端 API 客户端，用 HttpURLConnection 请求后端接口
  */
 object ApiClient {
-    // 后端地址（电脑局域网 IP + 端口）
-    private const val BASE_URL = "http://192.168.3.175:9999"
+    // 后端地址（域名）
+    private const val BASE_URL = "https://hk-vmiss.dokodemo.top/ride"
 
     // APP 版本号（从 BuildConfig 读取）
     private val appVersion: String
