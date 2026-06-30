@@ -191,3 +191,36 @@ ndk {
     abiFilters += listOf("arm64-v8a")
 }
 ```
+
+## 发布签名
+
+### 签名信息
+
+| 项目 | 值 |
+|------|-----|
+| keystore 文件 | `bike-navi.jks`（项目根目录） |
+| storePassword | `bike123456` |
+| keyAlias | `bike-navi` |
+| keyPassword | `bike123456` |
+| 有效期 | 36500 天（100 年） |
+| 签名算法 | RSA 2048 位，SHA384withRSA |
+| 证书信息 | CN=BikeNavi, OU=Dev, O=Example, L=Guangzhou, ST=Guangdong, C=CN |
+
+### 打包 Release APK
+
+```bash
+# Windows
+gradlew :app:assembleRelease
+```
+
+签名后的 APK 输出路径：
+```
+app/build/outputs/apk/release/app-release.apk
+```
+
+### 注意事项
+
+- **bike-navi.jks 文件务必妥善保管**，丢失后无法更新 APP
+- 密码已配置在 `app/build.gradle.kts` 的 `signingConfigs` 中
+- `.gitignore` 已排除 `*.jks`，keystore 不会提交到 git
+- 每次发布新版本时，递增 `versionCode` 和 `versionName`

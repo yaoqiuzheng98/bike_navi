@@ -11,6 +11,15 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../bike-navi.jks")
+            storePassword = "bike123456"
+            keyAlias = "bike-navi"
+            keyPassword = "bike123456"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.bikenavi"
         minSdk = 26
@@ -30,6 +39,7 @@ android {
             optimization {
                 enable = false
             }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
