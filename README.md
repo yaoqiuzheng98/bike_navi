@@ -208,9 +208,10 @@ ndk {
 
 ### 打包 Release APK
 
-```bash
-# Windows
-gradlew :app:assembleRelease
+```powershell
+# Windows PowerShell
+$env:JAVA_HOME = "D:\software\Android\Android Studio\jbr"
+.\gradlew :app:assembleRelease
 ```
 
 签名后的 APK 输出路径：

@@ -416,54 +416,6 @@ fun MapScreen() {
                     .padding(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                OutlinedButton(
-                    onClick = {
-                        val s = startPt
-                        val e = endPt
-                        if (s == null) {
-                            Toast.makeText(context, "尚未定位到当前位置", Toast.LENGTH_SHORT).show()
-                            return@OutlinedButton
-                        }
-                        if (e == null) {
-                            Toast.makeText(context, "请先选择终点", Toast.LENGTH_SHORT).show()
-                            return@OutlinedButton
-                        }
-                        clearRouteMarkers()
-                        val markers = mutableListOf<Marker>()
-                        markers.add(addMarker(aMap, s, true))
-                        markers.add(addMarker(aMap, e, false))
-                        routeMarkers.value = markers
-                        val from = LatLonPoint(s.latitude, s.longitude)
-                        val to = LatLonPoint(e.latitude, e.longitude)
-                        val query = RouteSearch.RideRouteQuery(RouteSearch.FromAndTo(from, to))
-                        routeSearch.calculateRideRouteAsyn(query)
-                    },
-                    modifier = Modifier.weight(1f),
-                ) { Text("查看路线") }
-
-                Button(
-                    onClick = {
-                        val s = startPt
-                        val e = endPt
-                        if (s == null) {
-                            Toast.makeText(context, "尚未定位到当前位置", Toast.LENGTH_SHORT).show()
-                            return@Button
-                        }
-                        if (e == null) {
-                            Toast.makeText(context, "请先选择终点", Toast.LENGTH_SHORT).show()
-                            return@Button
-                        }
-                        val intent = Intent(context, BikeNaviGuideActivity::class.java).apply {
-                            putExtra("startLat", s.latitude)
-                            putExtra("startLng", s.longitude)
-                            putExtra("endLat", e.latitude)
-                            putExtra("endLng", e.longitude)
-                        }
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.weight(1f),
-                ) { Text("开始导航") }
-
                 // 模拟导航按钮（隐藏，保留逻辑）
                 Button(
                     onClick = {
@@ -490,6 +442,54 @@ fun MapScreen() {
                         .weight(1f)
                         .height(0.dp),
                 ) { Text("模拟导航") }
+
+                Button(
+                    onClick = {
+                        val s = startPt
+                        val e = endPt
+                        if (s == null) {
+                            Toast.makeText(context, "尚未定位到当前位置", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (e == null) {
+                            Toast.makeText(context, "请先选择终点", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        val intent = Intent(context, BikeNaviGuideActivity::class.java).apply {
+                            putExtra("startLat", s.latitude)
+                            putExtra("startLng", s.longitude)
+                            putExtra("endLat", e.latitude)
+                            putExtra("endLng", e.longitude)
+                        }
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.weight(1f),
+                ) { Text("开始导航") }
+
+                OutlinedButton(
+                    onClick = {
+                        val s = startPt
+                        val e = endPt
+                        if (s == null) {
+                            Toast.makeText(context, "尚未定位到当前位置", Toast.LENGTH_SHORT).show()
+                            return@OutlinedButton
+                        }
+                        if (e == null) {
+                            Toast.makeText(context, "请先选择终点", Toast.LENGTH_SHORT).show()
+                            return@OutlinedButton
+                        }
+                        clearRouteMarkers()
+                        val markers = mutableListOf<Marker>()
+                        markers.add(addMarker(aMap, s, true))
+                        markers.add(addMarker(aMap, e, false))
+                        routeMarkers.value = markers
+                        val from = LatLonPoint(s.latitude, s.longitude)
+                        val to = LatLonPoint(e.latitude, e.longitude)
+                        val query = RouteSearch.RideRouteQuery(RouteSearch.FromAndTo(from, to))
+                        routeSearch.calculateRideRouteAsyn(query)
+                    },
+                    modifier = Modifier.weight(1f),
+                ) { Text("查看路线") }
             }
         }
     }
