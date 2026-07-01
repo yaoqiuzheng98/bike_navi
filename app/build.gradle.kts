@@ -57,7 +57,7 @@ androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
             if (output is com.android.build.api.variant.impl.VariantOutputImpl) {
-                output.outputFileName.set("骑行日记.apk")
+                output.outputFileName.set("骑行日记v${variant.outputs[0].versionName.get()}.apk")
             }
         }
     }
